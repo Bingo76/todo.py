@@ -1,15 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
+import json
+import os
 
 class TodoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("To-Do List")
-
         self.root.configure(bg='#2e2e2e')
         self.tasks = []
 
-        # Frame for adding tasks
+        self.load_tasks()
+
+        # Task add frame
         self.frame = tk.Frame(self.root, bg='#2e2e2e')
         self.frame.pack(pady=10)
 
@@ -18,13 +21,13 @@ class TodoApp:
         self.add_task_button = tk.Button(self.frame, text="Add Task", command=self.add_task, bg='#3e3e3e', fg='#d3d3d3')
         self.add_task_button.pack(side=tk.LEFT)
 
-        # Frame for displaying tasks
+        # Task display frame
         self.task_frame = tk.Frame(self.root, bg='#2e2e2e')
         self.task_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
         self.canvas = tk.Canvas(self.task_frame, borderwidth=0, bg='#2e2e2e', highlightthickness=0)
         self.task_list_frame = tk.Frame(self.canvas, bg='#2e2e2e')
-        self.scrollbar = CustomScrollbar(self.task_frame)
+        self.scrollbar = CustomScrollbar(self.task_frame, command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollbar.pack(side="right", fill="y")
@@ -38,14 +41,17 @@ class TodoApp:
         self.task_frame.grid_rowconfigure(0, weight=1)
         self.task_frame.grid_columnconfigure(0, weight=1)
 
+        self.load_existing_tasks()
+
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def add_task(self):
         task_text = self.task_entry.get()
-        if task_text != "":
+        if task_text:
             self.create_task(task_text)
             self.task_entry.delete(0, tk.END)
+            self.save_tasks()
         else:
             messagebox.showwarning("Warning", "You must enter a task.")
 
@@ -60,12 +66,31 @@ class TodoApp:
     def update_task_status(self, checkbox):
         if checkbox.var.get():
             checkbox.config(fg="gray", selectcolor='#2e2e2e', state=tk.DISABLED)
+        self.save_tasks()
 
-    def remove_task(self):
-        for task_text, checkbox in self.tasks[:]:
-            if checkbox.var.get():
-                checkbox.destroy()
-                self.tasks.remove((task_text, checkbox))
+    def remove_task(self, task_text, checkbox):
+        checkbox.destroy()
+        self.tasks.remove((task_text, checkbox))
+        self.save_tasks()
+
+    def load_tasks(self):
+        if os.path.exists("tasks.json"):
+            with open("tasks.json", "r") as file:
+                self.tasks_data = json.load(file)
+        else:
+            self.tasks_data = []
+
+    def save_tasks(self):
+        with open("tasks.json", "w") as file:
+            json.dump([(task_text, checkbox.var.get()) for task_text, checkbox in self.tasks], file)
+
+    def load_existing_tasks(self):
+        for task_text, completed in self.tasks_data:
+            self.create_task(task_text)
+            if completed:
+                checkbox = self.tasks[-1][1]
+                checkbox.select()
+                checkbox.config(fg="gray", selectcolor='#2e2e2e', state=tk.DISABLED)
 
 class CustomScrollbar(tk.Scrollbar):
     def __init__(self, parent, **kwargs):
