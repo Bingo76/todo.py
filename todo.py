@@ -12,7 +12,7 @@ class TodoApp:
 
         self.load_tasks()
 
-        # Task add frame
+
         self.frame = tk.Frame(self.root, bg='#2e2e2e')
         self.frame.pack(pady=10)
 
@@ -21,7 +21,10 @@ class TodoApp:
         self.add_task_button = tk.Button(self.frame, text="Add Task", command=self.add_task, bg='#3e3e3e', fg='#d3d3d3')
         self.add_task_button.pack(side=tk.LEFT)
 
-        # Task display frame
+        self.clear_task_button = tk.Button(self.frame, text="Clear Tasks", command=self.clear_tasks, bg='#3e3e3e', fg='#d3d3d3')
+        self.clear_task_button.pack(side=tk.LEFT, padx=10)
+
+
         self.task_frame = tk.Frame(self.root, bg='#2e2e2e')
         self.task_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
@@ -91,6 +94,17 @@ class TodoApp:
                 checkbox = self.tasks[-1][1]
                 checkbox.select()
                 checkbox.config(fg="gray", selectcolor='#2e2e2e', state=tk.DISABLED)
+
+    def clear_tasks(self):
+        # Backs up the current tasks
+        if os.path.exists("tasks.json"):
+            os.rename("tasks.json", "tasks_old.json")
+        
+        for task_text, checkbox in self.tasks[:]:
+            checkbox.destroy()
+        self.tasks.clear()
+
+        self.save_tasks()
 
 class CustomScrollbar(tk.Scrollbar):
     def __init__(self, parent, **kwargs):
